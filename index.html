@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistem Pengurusan PRS 2027</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#172554}
+header{background:#123d32;color:white;padding:24px;text-align:center}
+header h1{margin:0;font-size:24px}
+header p{margin:8px 0 0;font-size:13px}
+main{max-width:950px;margin:25px auto;padding:15px}
+.card{background:white;padding:22px;border-radius:14px;margin-bottom:18px;box-shadow:0 3px 12px #0001}
+h2{color:#14532d;font-size:20px}
+input,textarea,button{width:100%;padding:12px;margin:7px 0;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+button{background:#166534;color:white;border:0;font-weight:bold;cursor:pointer}
+button.secondary{background:#475569}
+button.danger{background:#991b1b}
+label{font-weight:bold;font-size:14px;display:block;margin-top:10px}
+video,canvas{width:100%;max-width:380px;border-radius:10px;background:#111}
+.hidden{display:none}
+.notice{padding:12px;background:#ecfdf5;border-radius:8px;margin:10px 0}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}
+img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
+#message{padding:10px;white-space:pre-wrap}
+@media(max-width:600px){main{padding:10px}.card{padding:15px}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>SISTEM PENGURUSAN PRS 2027</h1>
+<p>SMK TUN TELANAI</p>
+<p>UNIT BIMBINGAN DAN KAUNSELING</p>
+</header>
+
+<main>
+<div id="login" class="card">
+<h2>Log Masuk Admin UBK</h2>
+<p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
+<label>E-mel Admin</label>
+<input id="email" type="email" placeholder="E-mel Admin">
+<label>Kata Laluan</label>
+<input id="password" type="password" placeholder="Kata laluan">
+<button onclick="loginAdmin()">LOG MASUK</button>
+</div>
+
+<div id="dashboard" class="hidden">
+<div class="card">
+<h2>Dashboard Admin UBK</h2>
+<div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
+<button class="secondary" onclick="logoutAdmin()">LOG KELUAR</button>
+</div>
+
+<div class="card">
+<h2>Pendaftaran Calon PRS</h2>
+
+<label>Nama Penuh</label>
+<input id="nama" placeholder="Nama penuh pelajar">
+
+<label>No. Kad Pengenalan</label>
+<input id="kp" placeholder="Contoh: 100101110001">
+
+<label>Kelas</label>
+<input id="kelas" placeholder="Contoh: 3 Al-Farabi">
+
+<label>Tarikh Lahir</label>
+<input id="lahir" type="date">
+
+<label>Alamat</label>
+<textarea id="alamat" rows="3" placeholder="Alamat tempat tinggal"></textarea>
+
+<label>No. Telefon</label>
+<input id="telefon" type="tel" placeholder="Nombor telefon">
+
+<hr>
+<h2>Gambar Calon</h2>
+<p>Ambil gambar pelajar menggunakan kamera komputer.</p>
+<video id="video" autoplay playsinline class="hidden"></video>
+<canvas id="canvas" class="hidden"></canvas>
+<img id="preview" class="hidden photo" alt="Pratonton gambar">
+<button type="button" onclick="startCamera()">BUKA KAMERA</button>
+<button type="button" onclick="capturePhoto()" class="secondary">AMBIL GAMBAR</button>
+<button type="button" onclick="stopCamera()" class="secondary">TUTUP KAMERA</button>
+
+<button onclick="saveStudent()">SIMPAN PENDAFTARAN</button>
+<div id="message"></div>
+</div>
+
+<div class="card">
+<h2>Senarai Calon PRS 2027</h2>
+<input id="search" placeholder="Cari nama atau nombor KP..." oninput="filterStudents()">
+<div style="overflow-x:auto">
+<table>
+<thead>
+<tr><th>Gambar</th><th>Nama</th><th>No. KP</th><th>Kelas</th></tr>
+</thead>
+<tbody id="studentList"></tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+
+<script>
+// ISI DUA MAKLUMAT SUPABASE DI BAWAH
+const SUPABASE_URL = "https://dvcwyvwibuseycmwdgbp.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_ulpA2iZpgjoF0eIcmqEa_Q_Md451i3h";
+
+const db = window.supabase.createClient(
+ SUPABASE_URL,
+ SUPABASE_KEY
+);
+
+let currentPhoto = null;
+let cameraStream = null;
+let students = [];
+
+async function loginAdmin(){
+ const email=document.getElementById('email').value;
+ const password=document.getElementById('password').value;
+ const {data,error}=await db.auth.signInWithPassword({
+  email,password
+ });
+ if(error){alert("Log masuk gagal: "+error.message);return;}
+ const {data:admin,error:adminError}=await db
+  .from('prs_admins')
+  .select('user_id')
+  .eq('user_id',data.user.id)
+  .maybeSingle();
+
+ if(adminError || !admin){
+  await db.auth.signOut();
+  alert("Akaun ini tidak mempunyai akses Admin UBK.");
+  return;
+ }
+ showDashboard();
+}
+
+async function showDashboard(){
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('dashboard').classList.remove('hidden');
+ await loadStudents();
+}
+
+async function logoutAdmin(){
+ stopCamera();
+ await db.auth.signOut();
+ location.reload();
+}
+
+async function startCamera(){
+ try{
+  cameraStream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:"user"},audio:false
+  });
+  const video=document.getElementById('video');
+  video.srcObject=cameraStream;
+  video.classList.remove('hidden');
+ }catch(e){
+  alert("Kamera tidak dapat dibuka. Sila benarkan akses kamera.");
+ }
+}
+
+function capturePhoto(){
+ if(!cameraStream){alert("Sila buka kamera dahulu.");return;}
+ const video=document.getElementById('video');
+ const canvas=document.getElementById('canvas');
+ canvas.width=video.videoWidth;
+ canvas.height=video.videoHeight;
+ canvas.getContext('2d').drawImage(video,0,0);
+ canvas.toBlob(blob=>{
+  currentPhoto=blob;
+  const preview=document.getElementById('preview');
+  preview.src=URL.createObjectURL(blob);
+  preview.classList.remove('hidden');
+ },"image/jpeg",0.85);
+}
+
+function stopCamera(){
+ if(cameraStream){
+  cameraStream.getTracks().forEach(track=>track.stop());
+  cameraStream=null;
+ }
+ document.getElementById('video').classList.add('hidden');
+}
+
+async function saveStudent(){
+ const msg=document.getElementById('message');
+ const nama=document.getElementById('nama').value.trim();
+ const kp=document.getElementById('kp').value.trim();
+ const kelas=document.getElementById('kelas').value.trim();
+ const lahir=document.getElementById('lahir').value;
+ const alamat=document.getElementById('alamat').value.trim();
+ const telefon=document.getElementById('telefon').value.trim();
+
+ if(!nama||!kp||!kelas||!lahir||!alamat||!telefon){
+  alert("Sila lengkapkan semua maklumat pelajar.");
+  return;
+ }
+ if(!currentPhoto){
+  alert("Sila ambil gambar calon terlebih dahulu.");
+  return;
+ }
+ if(currentPhoto.size>2*1024*1024){
+  alert("Saiz gambar melebihi 2 MB.");
+  return;
+ }
+
+ msg.textContent="Sedang menyimpan...";
+ const safeName=crypto.randomUUID()+".jpg";
+ const path=safeName;
+
+ const {data:upload,error:uploadError}=await db.storage
+  .from('prs-gambar')
+  .upload(path,currentPhoto,{
+   contentType:'image/jpeg',
+   upsert:false
+  });
+
+ if(uploadError){
+  msg.textContent="Gagal memuat naik gambar: "+uploadError.message;
+  return;
+ }
+
+ const {error}=await db.from('calon_prs').insert({
+  nama_penuh:nama,
+  no_kp:kp,
+  kelas:kelas,
+  tarikh_lahir:lahir,
+  alamat:alamat,
+  no_telefon:telefon,
+  gambar_path:path
+ });
+
+ if(error){
+  await db.storage.from('prs-gambar').remove([path]);
+  msg.textContent="Gagal menyimpan data: "+error.message;
+  return;
+ }
+
+ msg.textContent="Pendaftaran calon berjaya disimpan.";
+ ['nama','kp','kelas','lahir','alamat','telefon'].forEach(id=>{
+  document.getElementById(id).value='';
+ });
+ currentPhoto=null;
+ document.getElementById('preview').classList.add('hidden');
+ stopCamera();
+ await loadStudents();
+}
+
+async function loadStudents(){
+ const {data,error}=await db.from('calon_prs')
+  .select('id,nama_penuh,no_kp,kelas,gambar_path')
+  .order('created_at',{ascending:false});
+
+ if(error){
+  document.getElementById('message').textContent=
+   "Gagal membaca senarai calon: "+error.message;
+  return;
+ }
+ students=data||[];
+ filterStudents();
+}
+
+async function filterStudents(){
+ const term=document.getElementById('search').value.toLowerCase();
+ const list=document.getElementById('studentList');
+ list.innerHTML='';
+
+ const filtered=students.filter(s=>
+  (s.nama_penuh||'').toLowerCase().includes(term)||
+  (s.no_kp||'').toLowerCase().includes(term)
+ );
+
+ for(const s of filtered){
+  const {data}=await db.storage.from('prs-gambar')
+   .createSignedUrl(s.gambar_path,300);
+  const tr=document.createElement('tr');
+  const td1=document.createElement('td');
+  if(data?.signedUrl){
+   const img=document.createElement('img');
+   img.src=data.signedUrl;
+   img.className='photo';
+   td1.appendChild(img);
+  }
+  const td2=document.createElement('td');
+  td2.textContent=s.nama_penuh;
+  const td3=document.createElement('td');
+  td3.textContent=s.no_kp;
+  const td4=document.createElement('td');
+  td4.textContent=s.kelas;
+  tr.append(td1,td2,td3,td4);
+  list.appendChild(tr);
+ }
+}
+
+// Semak sesi admin apabila halaman dibuka
+(async()=>{
+ const {data}=await db.auth.getSession();
+ if(data.session){
+  const {data:admin}=await db.from('prs_admins')
+   .select('user_id')
+   .eq('user_id',data.session.user.id)
+   .maybeSingle();
+  if(admin)showDashboard();
+ }
+})();
+</script>
+</body>
+</html>
