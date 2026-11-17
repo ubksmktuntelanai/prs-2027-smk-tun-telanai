@@ -609,12 +609,49 @@ async function filterStudents(){
   td3.textContent=s.no_kp;
   const td4=document.createElement('td');
   td4.textContent=s.kelas;
-  tr.append(td1,td2,td3,td4);
-  list.appendChild(tr);
+const td5=document.createElement('td');
+
+const editBtn=document.createElement('button');
+editBtn.textContent='EDIT';
+editBtn.className='secondary';
+editBtn.onclick=()=>editStudent(s);
+
+td5.appendChild(editBtn);
+
+tr.append(td1,td2,td3,td4,td5);
+list.appendChild(tr);
  }
 }
 
-// Semak sesi admin apabila halaman dibuka
+async function editStudent(s){
+
+ const nama=prompt("Nama penuh:",s.nama_penuh);
+ if(nama===null)return;
+
+ const kp=prompt("No. Kad Pengenalan:",s.no_kp);
+ if(kp===null)return;
+
+ const kelas=prompt("Kelas:",s.kelas);
+ if(kelas===null)return;
+
+ const {error}=await db
+ .from('calon_prs')
+ .update({
+   nama_penuh:nama,
+   no_kp:kp,
+   kelas:kelas
+ })
+ .eq('id',s.id);
+
+ if(error){
+   alert("Gagal mengemas kini: "+error.message);
+   return;
+ }
+
+ alert("Maklumat calon berjaya dikemas kini.");
+
+ await loadStudents();
+}// Semak sesi admin apabila halaman dibuka
 (async()=>{
  const {data}=await db.auth.getSession();
  if(data.session){
