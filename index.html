@@ -256,7 +256,7 @@ async function saveStudent(){
 
 async function loadStudents(){
  const {data,error}=await db.from('calon_prs')
-  .select('id,nama_penuh,no_kp,kelas,gambar_path')
+ .select('id,nama_penuh,no_kp,kelas,gambar_path,keputusan')
   .order('created_at',{ascending:false});
 
  if(error){
