@@ -299,9 +299,13 @@ async function filterStudents(){
 const td5=document.createElement('td');
 
 const editBtn=document.createElement('button');
+editBtn.type='button';
 editBtn.textContent='EDIT';
 editBtn.className='secondary';
-editBtn.onclick=()=>editStudent(s);
+
+editBtn.addEventListener('click', function(){
+    editStudent(s);
+});
 
 td5.appendChild(editBtn);
 
