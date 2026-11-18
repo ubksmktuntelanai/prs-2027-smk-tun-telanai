@@ -119,7 +119,7 @@ const db = window.supabase.createClient(
 let currentPhoto = null;
 let cameraStream = null;
 let students = [];
-
+let currentRole = null;
 async function loginAdmin(){
  const email=document.getElementById('email').value;
  const password=document.getElementById('password').value;
@@ -129,7 +129,7 @@ async function loginAdmin(){
  if(error){alert("Log masuk gagal: "+error.message);return;}
  const {data:admin,error:adminError}=await db
   .from('prs_admins')
-  .select('user_id')
+  .select('user_id, role')
   .eq('user_id',data.user.id)
   .maybeSingle();
 
@@ -137,8 +137,9 @@ async function loginAdmin(){
   await db.auth.signOut();
   alert("Akaun ini tidak mempunyai akses Admin UBK.");
   return;
- }
- showDashboard();
+}
+currentRole = admin.role;
+showDashboard();
 }
 
 async function showDashboard(){
@@ -252,7 +253,38 @@ async function saveStudent(){
  stopCamera();
  await loadStudents();
 }
+async function editStudent(s) {
+    const nama = prompt("Nama penuh calon:", s.nama_penuh);
+    if (nama === null) return;
 
+    const kp = prompt("No. Kad Pengenalan:", s.no_kp);
+    if (kp === null) return;
+
+    const kelas = prompt("Kelas:", s.kelas);
+    if (kelas === null) return;
+
+    if (!nama.trim() || !kp.trim() || !kelas.trim()) {
+        alert("Sila lengkapkan semua maklumat.");
+        return;
+    }
+
+    const { error } = await db
+        .from('calon_prs')
+        .update({
+            nama_penuh: nama.trim(),
+            no_kp: kp.trim(),
+            kelas: kelas.trim()
+        })
+        .eq('id', s.id);
+
+    if (error) {
+        alert("Gagal mengemas kini: " + error.message);
+        return;
+    }
+
+    alert("Maklumat calon berjaya dikemas kini!");
+    await loadStudents();
+}
 async function loadStudents(){
  const {data,error}=await db.from('calon_prs')
   .select('id,nama_penuh,no_kp,kelas,gambar_path')
@@ -294,7 +326,66 @@ async function filterStudents(){
   td3.textContent=s.no_kp;
   const td4=document.createElement('td');
   td4.textContent=s.kelas;
-  tr.append(td1,td2,td3,td4);
+ 
+const td5 = document.createElement('td');
+
+// Butang EDIT
+const editBtn = document.createElement('button');
+editBtn.type = 'button';
+editBtn.textContent = 'EDIT';
+editBtn.className = 'secondary';
+editBtn.addEventListener('click', function() {
+    editStudent(s);
+});
+td5.appendChild(editBtn);
+
+// Butang keputusan untuk Ketua Admin sahaja
+if (currentRole === 'ketua_admin') {
+
+    const berjayaBtn = document.createElement('button');
+    berjayaBtn.type = 'button';
+    berjayaBtn.textContent = 'BERJAYA';
+    berjayaBtn.addEventListener('click', async function() {
+        if (!confirm('Tetapkan calon ini sebagai BERJAYA?')) return;
+
+        const { error } = await db.from('calon_prs')
+            .update({ keputusan: 'Berjaya' })
+            .eq('id', s.id);
+
+        if (error) {
+            alert('Gagal menyimpan keputusan: ' + error.message);
+            return;
+        }
+
+        alert('Keputusan calon telah dikemaskini!');
+        await loadStudents();
+    });
+    td5.appendChild(berjayaBtn);
+
+    const tidakBtn = document.createElement('button');
+    tidakBtn.type = 'button';
+    tidakBtn.textContent = 'TIDAK BERJAYA';
+    tidakBtn.className = 'danger';
+    tidakBtn.addEventListener('click', async function() {
+        if (!confirm('Tetapkan calon ini sebagai TIDAK BERJAYA?')) return;
+
+        const { error } = await db.from('calon_prs')
+            .update({ keputusan: 'Tidak Berjaya' })
+            .eq('id', s.id);
+
+        if (error) {
+            alert('Gagal menyimpan keputusan: ' + error.message);
+            return;
+        }
+
+        alert('Keputusan calon telah dikemaskini!');
+        await loadStudents();
+    });
+    td5.appendChild(tidakBtn);
+}
+
+tr.append(td1,td2,td3,td4,td5);
+
   list.appendChild(tr);
  }
 }
@@ -304,10 +395,12 @@ async function filterStudents(){
  const {data}=await db.auth.getSession();
  if(data.session){
   const {data:admin}=await db.from('prs_admins')
-   .select('user_id')
+   .select('user_id, role')
    .eq('user_id',data.session.user.id)
    .maybeSingle();
-  if(admin)showDashboard();
+  if(admin){
+    currentRole = admin.role;
+    showDashboard();
  }
 })();
 </script>
