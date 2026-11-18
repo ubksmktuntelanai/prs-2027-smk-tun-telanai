@@ -391,18 +391,24 @@ tr.append(td1,td2,td3,td4,td5);
 }
 
 // Semak sesi admin apabila halaman dibuka
-(async()=>{
- const {data}=await db.auth.getSession();
- if(data.session){
-  const {data:admin}=await db.from('prs_admins')
-   .select('user_id, role')
-   .eq('user_id',data.session.user.id)
-   .maybeSingle();
-  if(admin){
-    currentRole = admin.role;
-    showDashboard();
- }
-})();
+async function checkAdminSession() {
+    const { data } = await db.auth.getSession();
+
+    if (data.session) {
+        const { data: admin } = await db
+            .from('prs_admins')
+            .select('user_id, role')
+            .eq('user_id', data.session.user.id)
+            .maybeSingle();
+
+        if (admin) {
+            currentRole = admin.role;
+            showDashboard();
+        }
+    }
+}
+
+checkAdminSession();
 </script>
 </body>
 </html>
