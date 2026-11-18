@@ -341,7 +341,53 @@ editBtn.addEventListener('click', function(){
     editStudent(s);
 });
 
+
 td5.appendChild(editBtn);
+
+// BUTANG BERJAYA
+const berjayaBtn = document.createElement('button');
+berjayaBtn.type = 'button';
+berjayaBtn.textContent = 'BERJAYA';
+berjayaBtn.style.background = '#198754';
+
+berjayaBtn.addEventListener('click', async function() {
+    const { error } = await db.from('calon_prs')
+        .update({ keputusan: 'Berjaya' })
+        .eq('id', s.id);
+
+    if (error) {
+        alert('Gagal menyimpan keputusan: ' + error.message);
+        return;
+    }
+
+    alert('Calon berjaya dikemaskini!');
+    await loadStudents();
+});
+
+td5.appendChild(berjayaBtn);
+
+// BUTANG TIDAK BERJAYA
+const tidakBtn = document.createElement('button');
+tidakBtn.type = 'button';
+tidakBtn.textContent = 'TIDAK BERJAYA';
+tidakBtn.className = 'danger';
+
+tidakBtn.addEventListener('click', async function() {
+    const { error } = await db.from('calon_prs')
+        .update({ keputusan: 'Tidak Berjaya' })
+        .eq('id', s.id);
+
+    if (error) {
+        alert('Gagal menyimpan keputusan: ' + error.message);
+        return;
+    }
+
+    alert('Keputusan calon telah dikemaskini!');
+    await loadStudents();
+});
+
+td5.appendChild(tidakBtn);
+
 
 tr.append(td1,td2,td3,td4,td5);
 list.appendChild(tr);
