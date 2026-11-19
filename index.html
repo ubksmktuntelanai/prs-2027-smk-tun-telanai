@@ -255,41 +255,7 @@ async function saveStudent(){
 }
 
 async function editStudent(s) {
-    const nama = prompt("Nama penuh:", s.nama_penuh);
-    if (nama === null) return;
-
-    const kp = prompt("No. Kad Pengenalan:", s.no_kp);
-    if (kp === null) return;
-
-    const telefon = prompt("No. Telefon:", s.no_telefon || "");
-    if (telefon === null) return;
-
-    const kelas = prompt("Kelas:", s.kelas);
-    if (kelas === null) return;
-
-    if (!nama.trim() || !kp.trim() || !kelas.trim()) {
-        alert("Sila lengkapkan semua maklumat.");
-        return;
-    }
-
-    const { error } = await db
-        .from('calon_prs')
-        .update({
-            nama_penuh: nama.trim(),
-            no_kp: kp.trim(),
-            no_telefon: telefon.trim(),
-            kelas: kelas.trim()
-        })
-        .eq('id', s.id);
-
-    if (error) {
-        alert("Gagal mengemas kini: " + error.message);
-        return;
-    }
-
-    alert("Maklumat calon berjaya dikemas kini!");
-    await loadStudents();
-}  const nama = prompt("Nama penuh:", s.nama_penuh);
+  const nama = prompt("Nama penuh:", s.nama_penuh);
   if (nama === null) return;
 
   const kp = prompt("No. Kad Pengenalan:", s.no_kp);
@@ -381,7 +347,7 @@ td5.appendChild(editBtn);
 // BUTANG BERJAYA
 const berjayaBtn = document.createElement('button');
 berjayaBtn.type = 'button';
-berjayaBtn.textContent = 'PILIH SEBAGAI PRS';
+berjayaBtn.textContent = 'BERJAYA';
 berjayaBtn.style.background = '#198754';
 
 berjayaBtn.addEventListener('click', async function() {
