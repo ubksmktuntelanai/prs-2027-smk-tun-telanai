@@ -39,24 +39,7 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 </header>
 
 <main>
-<div id="login" class="card">
-<h2>Log Masuk Admin UBK</h2>
-<p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
-<label>E-mel Admin</label>
-<input id="email" type="email" placeholder="E-mel Admin">
-<label>Kata Laluan</label>
-<input id="password" type="password" placeholder="Kata laluan">
-<button onclick="loginAdmin()">LOG MASUK</button>
-</div>
-
-<div id="dashboard" class="hidden">
-<div class="card">
-<h2>Dashboard Admin UBK</h2>
-<div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
-<button class="secondary" onclick="logoutAdmin()">LOG KELUAR</button>
-</div>
-
-<div class="card">
+ <div class="card">
 <h2>Pendaftaran Calon PRS</h2>
 
 <label>Nama Penuh</label>
@@ -90,6 +73,24 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 <button onclick="saveStudent()">SIMPAN PENDAFTARAN</button>
 <div id="message"></div>
 </div>
+<div id="login" class="card">
+<h2>Log Masuk Admin UBK</h2>
+<p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
+<label>E-mel Admin</label>
+<input id="email" type="email" placeholder="E-mel Admin">
+<label>Kata Laluan</label>
+<input id="password" type="password" placeholder="Kata laluan">
+<button onclick="loginAdmin()">LOG MASUK</button>
+</div>
+
+<div id="dashboard" class="hidden">
+<div class="card">
+<h2>Dashboard Admin UBK</h2>
+<div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
+<button class="secondary" onclick="logoutAdmin()">LOG KELUAR</button>
+</div>
+
+
 
 <div class="card">
 <h2>Senarai Calon PRS 2027</h2>
@@ -119,7 +120,7 @@ const db = window.supabase.createClient(
 let currentPhoto = null;
 let cameraStream = null;
 let students = [];
-let currentRole = null;
+
 async function loginAdmin(){
  const email=document.getElementById('email').value;
  const password=document.getElementById('password').value;
@@ -129,7 +130,7 @@ async function loginAdmin(){
  if(error){alert("Log masuk gagal: "+error.message);return;}
  const {data:admin,error:adminError}=await db
   .from('prs_admins')
-  .select('user_id, role')
+  .select('user_id')
   .eq('user_id',data.user.id)
   .maybeSingle();
 
@@ -137,9 +138,8 @@ async function loginAdmin(){
   await db.auth.signOut();
   alert("Akaun ini tidak mempunyai akses Admin UBK.");
   return;
-}
-currentRole = admin.role;
-showDashboard();
+ }
+ showDashboard();
 }
 
 async function showDashboard(){
@@ -253,41 +253,44 @@ async function saveStudent(){
  stopCamera();
  await loadStudents();
 }
+
 async function editStudent(s) {
-    const nama = prompt("Nama penuh calon:", s.nama_penuh);
-    if (nama === null) return;
+  const nama = prompt("Nama penuh:", s.nama_penuh);
+  if (nama === null) return;
 
-    const kp = prompt("No. Kad Pengenalan:", s.no_kp);
-    if (kp === null) return;
+  const kp = prompt("No. Kad Pengenalan:", s.no_kp);
+  if (kp === null) return;
 
-    const kelas = prompt("Kelas:", s.kelas);
-    if (kelas === null) return;
+  const kelas = prompt("Kelas:", s.kelas);
+  if (kelas === null) return;
 
-    if (!nama.trim() || !kp.trim() || !kelas.trim()) {
-        alert("Sila lengkapkan semua maklumat.");
-        return;
-    }
+  if (!nama.trim() || !kp.trim() || !kelas.trim()) {
+    alert("Sila lengkapkan semua maklumat.");
+    return;
+  }
 
-    const { error } = await db
-        .from('calon_prs')
-        .update({
-            nama_penuh: nama.trim(),
-            no_kp: kp.trim(),
-            kelas: kelas.trim()
-        })
-        .eq('id', s.id);
+  const { error } = await db
+    .from('calon_prs')
+    .update({
+      nama_penuh: nama.trim(),
+      no_kp: kp.trim(),
+      kelas: kelas.trim()
+    })
+    .eq('id', s.id);
 
-    if (error) {
-        alert("Gagal mengemas kini: " + error.message);
-        return;
-    }
+  if (error) {
+    alert("Gagal mengemas kini: " + error.message);
+    return;
+  }
 
-    alert("Maklumat calon berjaya dikemas kini!");
-    await loadStudents();
+  alert("Maklumat calon berjaya dikemas kini!");
+
+  await loadStudents();
 }
-async function loadStudents(){
+
+ async function loadStudents(){
  const {data,error}=await db.from('calon_prs')
-  .select('id,nama_penuh,no_kp,kelas,gambar_path')
+ .select('id,nama_penuh,no_kp,kelas,gambar_path,keputusan')
   .order('created_at',{ascending:false});
 
  if(error){
@@ -326,89 +329,84 @@ async function filterStudents(){
   td3.textContent=s.no_kp;
   const td4=document.createElement('td');
   td4.textContent=s.kelas;
- 
-const td5 = document.createElement('td');
+  
+const td5=document.createElement('td');
 
-// Butang EDIT
-const editBtn = document.createElement('button');
-editBtn.type = 'button';
-editBtn.textContent = 'EDIT';
-editBtn.className = 'secondary';
-editBtn.addEventListener('click', function() {
+const editBtn=document.createElement('button');
+editBtn.type='button';
+editBtn.textContent='EDIT';
+editBtn.className='secondary';
+
+editBtn.addEventListener('click', function(){
     editStudent(s);
 });
+
+
 td5.appendChild(editBtn);
 
-// Butang keputusan untuk Ketua Admin sahaja
-if (currentRole === 'ketua_admin') {
+// BUTANG BERJAYA
+const berjayaBtn = document.createElement('button');
+berjayaBtn.type = 'button';
+berjayaBtn.textContent = 'BERJAYA';
+berjayaBtn.style.background = '#198754';
 
-    const berjayaBtn = document.createElement('button');
-    berjayaBtn.type = 'button';
-    berjayaBtn.textContent = 'BERJAYA';
-    berjayaBtn.addEventListener('click', async function() {
-        if (!confirm('Tetapkan calon ini sebagai BERJAYA?')) return;
+berjayaBtn.addEventListener('click', async function() {
+    const { error } = await db.from('calon_prs')
+        .update({ keputusan: 'Berjaya' })
+        .eq('id', s.id);
 
-        const { error } = await db.from('calon_prs')
-            .update({ keputusan: 'Berjaya' })
-            .eq('id', s.id);
+    if (error) {
+        alert('Gagal menyimpan keputusan: ' + error.message);
+        return;
+    }
 
-        if (error) {
-            alert('Gagal menyimpan keputusan: ' + error.message);
-            return;
-        }
+    alert('Calon berjaya dikemaskini!');
+    await loadStudents();
+});
 
-        alert('Keputusan calon telah dikemaskini!');
-        await loadStudents();
-    });
-    td5.appendChild(berjayaBtn);
+td5.appendChild(berjayaBtn);
 
-    const tidakBtn = document.createElement('button');
-    tidakBtn.type = 'button';
-    tidakBtn.textContent = 'TIDAK BERJAYA';
-    tidakBtn.className = 'danger';
-    tidakBtn.addEventListener('click', async function() {
-        if (!confirm('Tetapkan calon ini sebagai TIDAK BERJAYA?')) return;
+// BUTANG TIDAK BERJAYA
+const tidakBtn = document.createElement('button');
+tidakBtn.type = 'button';
+tidakBtn.textContent = 'TIDAK BERJAYA';
+tidakBtn.className = 'danger';
 
-        const { error } = await db.from('calon_prs')
-            .update({ keputusan: 'Tidak Berjaya' })
-            .eq('id', s.id);
+tidakBtn.addEventListener('click', async function() {
+    const { error } = await db.from('calon_prs')
+        .update({ keputusan: 'Tidak Berjaya' })
+        .eq('id', s.id);
 
-        if (error) {
-            alert('Gagal menyimpan keputusan: ' + error.message);
-            return;
-        }
+    if (error) {
+        alert('Gagal menyimpan keputusan: ' + error.message);
+        return;
+    }
 
-        alert('Keputusan calon telah dikemaskini!');
-        await loadStudents();
-    });
-    td5.appendChild(tidakBtn);
-}
+    alert('Keputusan calon telah dikemaskini!');
+    await loadStudents();
+});
+
+td5.appendChild(tidakBtn);
+
 
 tr.append(td1,td2,td3,td4,td5);
+list.appendChild(tr);
 
-  list.appendChild(tr);
  }
 }
 
 // Semak sesi admin apabila halaman dibuka
-async function checkAdminSession() {
-    const { data } = await db.auth.getSession();
-
-    if (data.session) {
-        const { data: admin } = await db
-            .from('prs_admins')
-            .select('user_id, role')
-            .eq('user_id', data.session.user.id)
-            .maybeSingle();
-
-        if (admin) {
-            currentRole = admin.role;
-            showDashboard();
-        }
-    }
-}
-
-checkAdminSession();
+(async()=>{
+ const {data}=await db.auth.getSession();
+ if(data.session){
+  const {data:admin}=await db.from('prs_admins')
+   .select('user_id')
+   .eq('user_id',data.session.user.id)
+   .maybeSingle();
+  if(admin)showDashboard();
+ }
+})();
 </script>
 </body>
 </html>
+
