@@ -40,7 +40,69 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 
 <main>
 
-<div id="login" class="card">
+<div id="home" class="card" style="text-align:center">
+ <h2>SELAMAT DATANG</h2>
+ <p>Sistem Pengurusan Pembimbing Rakan Sebaya (PRS) 2027</p>
+
+ <button onclick="openAdminLogin()">
+  LOG MASUK ADMIN UBK
+ </button>
+
+ <button class="secondary" onclick="openPublicRegistration()">
+  PENDAFTARAN PRS
+ </button>
+</div>
+
+<div id="publicRegistration" class="card hidden">
+ <h2>PENDAFTARAN CALON PRS 2027</h2>
+ <p>Sila lengkapkan maklumat permohonan anda.</p>
+
+
+<div id="publicFormArea">
+
+ <label>Nama Penuh</label>
+ <input id="publicNama" placeholder="Nama penuh pelajar">
+
+ <label>No. Kad Pengenalan</label>
+ <input id="publicKP" placeholder="Contoh: 100101110001">
+
+ <label>Kelas</label>
+ <input id="publicKelas" placeholder="Contoh: 3 Al-Farabi">
+
+ <label>Tarikh Lahir</label>
+ <input id="publicLahir" type="date">
+
+ <label>Alamat</label>
+ <textarea id="publicAlamat" rows="3" placeholder="Alamat tempat tinggal"></textarea>
+
+ <label>No. Telefon</label>
+ <input id="publicTelefon" type="tel" placeholder="Nombor telefon">
+
+ <hr>
+ <h3>Gambar Calon</h3>
+ <p>Sila ambil gambar menggunakan kamera.</p>
+
+ <video id="publicVideo" autoplay playsinline class="hidden"></video>
+ <canvas id="publicCanvas" class="hidden"></canvas>
+ <img id="publicPreview" class="hidden photo" alt="Pratonton gambar">
+
+ <button type="button" onclick="startPublicCamera()">BUKA KAMERA</button>
+ <button type="button" class="secondary" onclick="capturePublicPhoto()">AMBIL GAMBAR</button>
+ <button type="button" class="secondary" onclick="stopPublicCamera()">TUTUP KAMERA</button>
+
+ <button type="button" onclick="submitPublicRegistration()">HANTAR PERMOHONAN</button>
+
+ <div id="publicMessage"></div>
+
+</div>
+
+
+ <button class="secondary" onclick="backToHome()">
+  KEMBALI KE HALAMAN UTAMA
+ </button>
+</div>
+
+<div id="login" class="card hidden">
 <h2>Log Masuk Admin UBK</h2>
 <p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
 <label>E-mel Admin</label>
@@ -122,7 +184,150 @@ let currentPhoto = null;
 let cameraStream = null;
 let students = [];
 let currentRole = null;
+
  
+function openAdminLogin(){
+ document.getElementById('home').classList.add('hidden');
+ document.getElementById('login').classList.remove('hidden');
+}
+
+
+function openPublicRegistration(){
+ document.getElementById('home').classList.add('hidden');
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('publicRegistration').classList.remove('hidden');
+}
+
+function backToHome(){
+ document.getElementById('publicRegistration').classList.add('hidden');
+ document.getElementById('login').classList.add('hidden');
+ document.getElementById('home').classList.remove('hidden');
+}
+
+let publicCameraStream = null;
+let publicPhoto = null;
+
+async function startPublicCamera(){
+ try{
+  publicCameraStream = await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:"user"},
+   audio:false
+  });
+
+  const video = document.getElementById('publicVideo');
+  video.srcObject = publicCameraStream;
+  video.classList.remove('hidden');
+ }catch(e){
+  alert("Kamera tidak dapat dibuka. Sila benarkan akses kamera.");
+ }
+}
+
+function capturePublicPhoto(){
+ if(!publicCameraStream){
+  alert("Sila buka kamera dahulu.");
+  return;
+ }
+
+ const video = document.getElementById('publicVideo');
+ const canvas = document.getElementById('publicCanvas');
+
+ canvas.width = video.videoWidth;
+ canvas.height = video.videoHeight;
+
+ canvas.getContext('2d').drawImage(video,0,0);
+
+ canvas.toBlob(blob=>{
+  if(!blob){
+   alert("Gagal mengambil gambar. Sila cuba lagi.");
+   return;
+  }
+
+  publicPhoto = blob;
+
+  const preview = document.getElementById('publicPreview');
+  preview.src = URL.createObjectURL(blob);
+  preview.classList.remove('hidden');
+ },"image/jpeg",0.85);
+}
+
+function stopPublicCamera(){
+ if(publicCameraStream){
+  publicCameraStream.getTracks().forEach(track=>track.stop());
+  publicCameraStream = null;
+ }
+
+ document.getElementById('publicVideo').classList.add('hidden');
+}
+
+async function submitPublicRegistration(){
+ const msg = document.getElementById('publicMessage');
+
+ const nama = document.getElementById('publicNama').value.trim();
+ const kp = document.getElementById('publicKP').value.trim();
+ const kelas = document.getElementById('publicKelas').value.trim();
+ const lahir = document.getElementById('publicLahir').value;
+ const alamat = document.getElementById('publicAlamat').value.trim();
+ const telefon = document.getElementById('publicTelefon').value.trim();
+
+ if(!nama || !kp || !kelas || !lahir || !alamat || !telefon){
+  alert("Sila lengkapkan semua maklumat.");
+  return;
+ }
+
+ if(!publicPhoto){
+  alert("Sila ambil gambar calon terlebih dahulu.");
+  return;
+ }
+
+ if(publicPhoto.size > 2 * 1024 * 1024){
+  alert("Saiz gambar melebihi 2 MB.");
+  return;
+ }
+
+ msg.textContent = "Sedang menghantar permohonan...";
+
+ const path = crypto.randomUUID() + ".jpg";
+
+ const {error:uploadError} = await db.storage
+  .from('prs-gambar')
+  .upload(path, publicPhoto, {
+   contentType:'image/jpeg',
+   upsert:false
+  });
+
+ if(uploadError){
+  msg.textContent = "Gagal memuat naik gambar: " + uploadError.message;
+  return;
+ }
+
+ const {error} = await db.from('calon_prs').insert({
+  nama_penuh:nama,
+  no_kp:kp,
+  kelas:kelas,
+  tarikh_lahir:lahir,
+  alamat:alamat,
+  no_telefon:telefon,
+  gambar_path:path
+ });
+
+ if(error){
+  await db.storage.from('prs-gambar').remove([path]);
+  msg.textContent = "Gagal menghantar permohonan: " + error.message;
+  return;
+ }
+
+ msg.textContent = "Permohonan berjaya dihantar. Terima kasih!";
+
+ stopPublicCamera();
+ publicPhoto = null;
+
+ ['publicNama','publicKP','publicKelas',
+  'publicLahir','publicAlamat','publicTelefon']
+  .forEach(id => document.getElementById(id).value = '');
+
+ document.getElementById('publicPreview').classList.add('hidden');
+}
+
 async function loginAdmin(){
  const email=document.getElementById('email').value.trim();
  const password=document.getElementById('password').value;
@@ -154,8 +359,8 @@ async function loginAdmin(){
  showDashboard();
 }
 
-
 async function showDashboard(){
+ document.getElementById('home').classList.add('hidden');
  document.getElementById('login').classList.add('hidden');
  document.getElementById('dashboard').classList.remove('hidden');
  await loadStudents();
