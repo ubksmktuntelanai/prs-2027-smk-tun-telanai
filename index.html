@@ -39,6 +39,26 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 </header>
 
 <main>
+
+<div id="login" class="card">
+<h2>Log Masuk Admin UBK</h2>
+<p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
+<label>E-mel Admin</label>
+<input id="email" type="email" placeholder="E-mel Admin">
+<label>Kata Laluan</label>
+<input id="password" type="password" placeholder="Kata laluan">
+<button onclick="loginAdmin()">LOG MASUK</button>
+</div>
+
+<div id="dashboard" class="hidden">
+<div class="card">
+<h2>Dashboard Admin UBK</h2>
+<div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
+<button class="secondary" onclick="logoutAdmin()">LOG KELUAR</button>
+</div>
+
+
+
  <div class="card">
 <h2>Pendaftaran Calon PRS</h2>
 
@@ -73,26 +93,7 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 <button onclick="saveStudent()">SIMPAN PENDAFTARAN</button>
 <div id="message"></div>
 </div>
-<div id="login" class="card">
-<h2>Log Masuk Admin UBK</h2>
-<p>Sila log masuk menggunakan akaun Admin yang berdaftar.</p>
-<label>E-mel Admin</label>
-<input id="email" type="email" placeholder="E-mel Admin">
-<label>Kata Laluan</label>
-<input id="password" type="password" placeholder="Kata laluan">
-<button onclick="loginAdmin()">LOG MASUK</button>
-</div>
-
-<div id="dashboard" class="hidden">
-<div class="card">
-<h2>Dashboard Admin UBK</h2>
-<div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
-<button class="secondary" onclick="logoutAdmin()">LOG KELUAR</button>
-</div>
-
-
-
-<div class="card">
+ <div class="card">
 <h2>Senarai Calon PRS 2027</h2>
 <input id="search" placeholder="Cari nama atau nombor KP..." oninput="filterStudents()">
 <div style="overflow-x:auto">
