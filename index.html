@@ -120,27 +120,39 @@ const db = window.supabase.createClient(
 let currentPhoto = null;
 let cameraStream = null;
 let students = [];
-
+let currentRole = null;
+ 
 async function loginAdmin(){
- const email=document.getElementById('email').value;
+ const email=document.getElementById('email').value.trim();
  const password=document.getElementById('password').value;
+
  const {data,error}=await db.auth.signInWithPassword({
-  email,password
+  email,
+  password
  });
- if(error){alert("Log masuk gagal: "+error.message);return;}
+
+ if(error){
+  alert("Log masuk gagal: "+error.message);
+  return;
+ }
+
  const {data:admin,error:adminError}=await db
   .from('prs_admins')
-  .select('user_id')
+  .select('user_id, role')
   .eq('user_id',data.user.id)
   .maybeSingle();
 
- if(adminError || !admin){
+ if(adminError || !admin ||
+    !['ketua_admin','admin_ubk'].includes(admin.role)){
   await db.auth.signOut();
   alert("Akaun ini tidak mempunyai akses Admin UBK.");
   return;
  }
+
+ currentRole=admin.role;
  showDashboard();
 }
+
 
 async function showDashboard(){
  document.getElementById('login').classList.add('hidden');
@@ -395,17 +407,28 @@ list.appendChild(tr);
  }
 }
 
+
 // Semak sesi admin apabila halaman dibuka
 (async()=>{
  const {data}=await db.auth.getSession();
+
  if(data.session){
-  const {data:admin}=await db.from('prs_admins')
-   .select('user_id')
+  const {data:admin,error}=await db
+   .from('prs_admins')
+   .select('user_id, role')
    .eq('user_id',data.session.user.id)
    .maybeSingle();
-  if(admin)showDashboard();
+
+  if(!error && admin &&
+     ['ketua_admin','admin_ubk'].includes(admin.role)){
+   currentRole=admin.role;
+   await showDashboard();
+  }else{
+   await db.auth.signOut();
+  }
  }
 })();
+
 </script>
 </body>
 </html>
