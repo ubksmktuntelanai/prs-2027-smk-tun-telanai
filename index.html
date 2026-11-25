@@ -203,7 +203,11 @@ function stopCamera(){
  document.getElementById('video').classList.add('hidden');
 }
 
-async function saveStudent(){
+async function saveStudent(){if(!currentRole ||
+   !['ketua_admin','admin_ubk'].includes(currentRole)){
+ alert("Sila log masuk sebagai Admin UBK terlebih dahulu.");
+ return;
+}
  const msg=document.getElementById('message');
  const nama=document.getElementById('nama').value.trim();
  const kp=document.getElementById('kp').value.trim();
