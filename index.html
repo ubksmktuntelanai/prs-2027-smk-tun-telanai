@@ -540,10 +540,45 @@ async function filterStudents(){
   const tr=document.createElement('tr');
   const td1=document.createElement('td');
   if(data?.signedUrl){
-   const img=document.createElement('img');
-   img.src=data.signedUrl;
-   img.className='photo';
-   td1.appendChild(img);
+const img = document.createElement('img');
+img.src = data.signedUrl;
+img.className = 'photo';
+img.style.cursor = 'zoom-in';
+
+img.addEventListener('click', function() {
+    const overlay = document.createElement('div');
+
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(0,0,0,0.85)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '9999';
+    overlay.style.cursor = 'zoom-out';
+    overlay.style.padding = '20px';
+
+    const zoomImg = document.createElement('img');
+    zoomImg.src = img.src;
+    zoomImg.style.maxWidth = '95%';
+    zoomImg.style.maxHeight = '90%';
+    zoomImg.style.objectFit = 'contain';
+    zoomImg.style.borderRadius = '10px';
+
+    zoomImg.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+
+    overlay.appendChild(zoomImg);
+
+    overlay.addEventListener('click', function() {
+        overlay.remove();
+    });
+
+    document.body.appendChild(overlay);
+});
+
+td1.appendChild(img);
   }
   const td2=document.createElement('td');
   td2.textContent=s.nama_penuh;
@@ -565,7 +600,24 @@ editBtn.addEventListener('click', function(){
 
 
 td5.appendChild(editBtn);
+// PAPARAN STATUS KEPUTUSAN
+const statusLabel = document.createElement('div');
+const keputusan = (s.keputusan || '').trim().toLowerCase();
 
+if (keputusan === 'berjaya') {
+    statusLabel.textContent = 'BERJAYA';
+    statusLabel.style.color = '#198754';
+} else if (keputusan === 'tidak berjaya') {
+    statusLabel.textContent = 'TIDAK BERJAYA';
+    statusLabel.style.color = '#dc3545';
+} else {
+    statusLabel.textContent = 'SEDANG MENUNGGU';
+    statusLabel.style.color = '#d97706';
+}
+
+statusLabel.style.fontWeight = 'bold';
+statusLabel.style.margin = '10px 0';
+td5.appendChild(statusLabel);
 // BUTANG BERJAYA
 const berjayaBtn = document.createElement('button');
 berjayaBtn.type = 'button';
@@ -609,7 +661,48 @@ tidakBtn.addEventListener('click', async function() {
 });
 
 td5.appendChild(tidakBtn);
+// BUTANG DELETE - KETUA ADMIN SAHAJA
+if (currentRole === 'ketua_admin') {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.textContent = 'DELETE';
+    deleteBtn.className = 'danger';
+    deleteBtn.style.background = '#7f1d1d';
 
+    deleteBtn.addEventListener('click', async function() {
+        if (!confirm('Adakah anda pasti mahu memadam rekod calon ini?')) {
+            return;
+        }
+
+        // Padam rekod calon
+        const { error } = await db.from('calon_prs')
+            .delete()
+            .eq('id', s.id);
+
+        if (error) {
+            alert('Gagal memadam rekod: ' + error.message);
+            return;
+        }
+
+        // Padam gambar calon
+        if (s.gambar_path) {
+            const { error: gambarError } = await db.storage
+                .from('prs-gambar')
+                .remove([s.gambar_path]);
+
+            if (gambarError) {
+                alert('Rekod telah dipadam tetapi gambar gagal dipadam: ' + gambarError.message);
+                await loadStudents();
+                return;
+            }
+        }
+
+        alert('Rekod calon berjaya dipadam.');
+        await loadStudents();
+    });
+
+    td5.appendChild(deleteBtn);
+}
 
 tr.append(td1,td2,td3,td4,td5);
 list.appendChild(tr);
