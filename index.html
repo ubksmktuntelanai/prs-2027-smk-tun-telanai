@@ -374,7 +374,20 @@ async function logoutAdmin(){
  await db.auth.signOut();
  location.reload();
 }
+function toggleRegistration(){
+    const form = document.getElementById('registration');
 
+    if (!form) {
+        alert('Borang pendaftaran tidak dijumpai.');
+        return;
+    }
+
+    form.classList.toggle('hidden');
+
+    if (!form.classList.contains('hidden')) {
+        form.scrollIntoView({behavior:'smooth'});
+    }
+}
 async function startCamera(){
  try{
   cameraStream=await navigator.mediaDevices.getUserMedia({
