@@ -468,12 +468,39 @@ function backToDashboard(){
                     height: 65px;
                     object-fit: cover;
                 }
+        .print-control {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.print-control button {
+    background: #166534;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+@media print {
+    .print-control {
+        display: none;
+    }
+}
             </style>
         </head>
-        <body>
-            <h2>SENARAI CALON PRS 2027<br>SMK TUN TELANAI</h2>
-            ${table.outerHTML}
-        </body>
+      <body>
+    <div class="print-control">
+        <button onclick="window.print()">
+            CETAK SENARAI CALON
+        </button>
+    </div>
+
+    <h2>SENARAI CALON PRS 2027<br>SMK TUN TELANAI</h2>
+    ${table.outerHTML}
+</body>
         </html>
     `);
     printWindow.document.close();
