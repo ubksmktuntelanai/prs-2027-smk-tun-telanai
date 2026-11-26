@@ -166,6 +166,11 @@ KEMBALI KE DASHBOARD UTAMA
 </div>
 <div id="candidateList" class="card">
 <h2>Senarai Calon PRS 2027</h2>
+ 
+ <button type="button" class="secondary"
+onclick="printCandidateList()">
+CETAK SENARAI CALON PRS
+</button>
 <input id="search" placeholder="Cari nama atau nombor KP..." oninput="filterStudents()">
 <div style="overflow-x:auto">
 <table>
@@ -409,6 +414,69 @@ function backToDashboard(){
     list.classList.remove('hidden');
 
     header.scrollIntoView({behavior:'smooth'});
+}
+ function printCandidateList(){
+    const table = document.querySelector('#candidateList table');
+
+    if (!table) {
+        alert('Senarai calon tidak dijumpai.');
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+
+    if (!printWindow) {
+        alert('Sila benarkan pop-up untuk mencetak.');
+        return;
+    }
+
+    printWindow.onload = function(){
+        printWindow.focus();
+        printWindow.print();
+    };
+
+    printWindow.document.open();
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Senarai Calon PRS 2027</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }
+                h2 {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid #999;
+                    padding: 8px;
+                    text-align: left;
+                    font-size: 12px;
+                }
+                th {
+                    background: #eee;
+                }
+                img {
+                    width: 55px;
+                    height: 65px;
+                    object-fit: cover;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>SENARAI CALON PRS 2027<br>SMK TUN TELANAI</h2>
+            ${table.outerHTML}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 async function startCamera(){
  try{
