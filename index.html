@@ -523,8 +523,9 @@ async function editStudent(s) {
  students=data||[];
  filterStudents();
 }
-
+let filterRequestId = 0;
 async function filterStudents(){
+ const currentRequestId = ++filterRequestId;
  const term=document.getElementById('search').value.toLowerCase();
  const list=document.getElementById('studentList');
  list.innerHTML='';
@@ -536,7 +537,7 @@ async function filterStudents(){
 
  for(const s of filtered){
   const {data}=await db.storage.from('prs-gambar')
-   .createSignedUrl(s.gambar_path,300);
+   .createSignedUrl(s.gambar_path,300);if (currentRequestId !== filterRequestId) return;
   const tr=document.createElement('tr');
   const td1=document.createElement('td');
   if(data?.signedUrl){
