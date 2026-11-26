@@ -416,10 +416,12 @@ function backToDashboard(){
     header.scrollIntoView({behavior:'smooth'});
 }
  function printCandidateList(){
-    const table = document.querySelector('#candidateList table');
+    const berjaya = students.filter(s =>
+        (s.keputusan || '').trim().toLowerCase() === 'berjaya'
+    );
 
-    if (!table) {
-        alert('Senarai calon tidak dijumpai.');
+    if (berjaya.length === 0) {
+        alert('Tiada calon berstatus BERJAYA untuk dicetak.');
         return;
     }
 
@@ -430,77 +432,99 @@ function backToDashboard(){
         return;
     }
 
-    printWindow.onload = function(){
-        printWindow.focus();
-        printWindow.print();
-    };
+    const escapeHTML = value => String(value || '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[c]));
+
+    const rows = berjaya.map((s, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHTML(s.nama_penuh)}</td>
+            <td>${escapeHTML(s.no_kp)}</td>
+            <td>${escapeHTML(s.kelas)}</td>
+        </tr>
+    `).join('');
 
     printWindow.document.open();
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Senarai Calon PRS 2027</title>
+            <title>Senarai Calon PRS Berjaya 2027</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
-                    padding: 20px;
+                    padding: 25px;
                 }
                 h2 {
                     text-align: center;
-                    margin-bottom: 20px;
+                    margin-bottom: 8px;
+                }
+                p {
+                    text-align: center;
+                    margin-bottom: 25px;
                 }
                 table {
                     width: 100%;
                     border-collapse: collapse;
                 }
                 th, td {
-                    border: 1px solid #999;
-                    padding: 8px;
+                    border: 1px solid #555;
+                    padding: 10px;
                     text-align: left;
-                    font-size: 12px;
                 }
                 th {
                     background: #eee;
                 }
-                img {
-                    width: 55px;
-                    height: 65px;
-                    object-fit: cover;
+                .print-control {
+                    text-align: center;
+                    margin-bottom: 20px;
                 }
-        .print-control {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.print-control button {
-    background: #166534;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 6px;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-@media print {
-    .print-control {
-        display: none;
-    }
-}
+                .print-control button {
+                    background: #166534;
+                    color: white;
+                    border: none;
+                    padding: 12px 25px;
+                    border-radius: 6px;
+                    font-size: 15px;
+                    font-weight: bold;
+                    cursor: pointer;
+                }
+                @media print {
+                    .print-control {
+                        display: none;
+                    }
+                }
             </style>
         </head>
-      <body>
-    <div class="print-control">
-        <button onclick="window.print()">
-            CETAK SENARAI CALON
-        </button>
-    </div>
+        <body>
+            <div class="print-control">
+                <button onclick="window.print()">
+                    CETAK SENARAI CALON BERJAYA
+                </button>
+            </div>
 
-    <h2>SENARAI CALON PRS 2027<br>SMK TUN TELANAI</h2>
-    ${table.outerHTML}
-</body>
+            <h2>SENARAI CALON PRS BERJAYA 2027</h2>
+            <p>SMK TUN TELANAI</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bil.</th>
+                        <th>Nama Calon</th>
+                        <th>No. KP</th>
+                        <th>Kelas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </body>
         </html>
     `);
     printWindow.document.close();
