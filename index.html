@@ -368,7 +368,19 @@ async function showDashboard(){
  document.getElementById('dashboard').classList.remove('hidden');
  await loadStudents();
 }
+function toggleRegistration(){
+    const form = document.getElementById('registration');
 
+    if(!form) return;
+
+    form.classList.toggle('hidden');
+
+    if(!form.classList.contains('hidden')){
+        form.scrollIntoView({behavior:'smooth'});
+    } else {
+        form.querySelector('form')?.reset();
+    }
+}
 async function logoutAdmin(){
  stopCamera();
  await db.auth.signOut();
