@@ -113,7 +113,7 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
 </div>
 
 <div id="dashboard" class="hidden">
-<div class="card">
+<div id="dashboardHeader" class="card">
 <h2>Dashboard Admin UBK</h2>
 <div class="notice">Sistem Pendaftaran Calon Pembimbing Rakan Sebaya Tahun 2027</div>
 <button type="button" onclick="toggleRegistration()">
@@ -157,8 +157,14 @@ PERMOHONAN CALON PRS
 
 <button onclick="saveStudent()">SIMPAN PENDAFTARAN</button>
 <div id="message"></div>
+
+<button type="button" class="secondary"
+onclick="backToDashboard()">
+KEMBALI KE DASHBOARD UTAMA
+</button>
+
 </div>
- <div class="card">
+<div id="candidateList" class="card">
 <h2>Senarai Calon PRS 2027</h2>
 <input id="search" placeholder="Cari nama atau nombor KP..." oninput="filterStudents()">
 <div style="overflow-x:auto">
@@ -376,17 +382,33 @@ async function logoutAdmin(){
 }
 function toggleRegistration(){
     const form = document.getElementById('registration');
+    const header = document.getElementById('dashboardHeader');
+    const list = document.getElementById('candidateList');
 
-    if (!form) {
-        alert('Borang pendaftaran tidak dijumpai.');
+    if (!form || !header || !list) {
+        alert('Paparan sistem tidak lengkap.');
         return;
     }
 
-    form.classList.toggle('hidden');
+    header.classList.add('hidden');
+    list.classList.add('hidden');
+    form.classList.remove('hidden');
 
-    if (!form.classList.contains('hidden')) {
-        form.scrollIntoView({behavior:'smooth'});
-    }
+    form.scrollIntoView({behavior:'smooth'});
+}
+
+function backToDashboard(){
+    const form = document.getElementById('registration');
+    const header = document.getElementById('dashboardHeader');
+    const list = document.getElementById('candidateList');
+
+    if (!form || !header || !list) return;
+
+    form.classList.add('hidden');
+    header.classList.remove('hidden');
+    list.classList.remove('hidden');
+
+    header.scrollIntoView({behavior:'smooth'});
 }
 async function startCamera(){
  try{
