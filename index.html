@@ -87,6 +87,12 @@ img.photo{width:55px;height:65px;object-fit:cover;border-radius:5px}
  <img id="publicPreview" class="hidden photo" alt="Pratonton gambar">
 
  <button type="button" onclick="startPublicCamera()">BUKA KAMERA</button>
+ <input
+  type="file"
+  id="publicPhotoUpload"
+  accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+  onchange="uploadPublicPhoto(event)"
+>
  <button type="button" class="secondary" onclick="capturePublicPhoto()">AMBIL GAMBAR</button>
  <button type="button" class="secondary" onclick="stopPublicCamera()">TUTUP KAMERA</button>
 
@@ -278,6 +284,34 @@ function capturePublicPhoto(){
  },"image/jpeg",0.85);
 }
 
+function uploadPublicPhoto(event){
+ const file = event.target.files[0];
+
+ if(!file) return;
+
+ const allowedTypes = ["image/jpeg","image/png"];
+ const allowedExtensions = /\.(jpg|jpeg|png)$/i;
+
+ if(!allowedTypes.includes(file.type) ||
+    !allowedExtensions.test(file.name)){
+  alert("Format gambar mestilah PNG, JPG atau JPEG sahaja.");
+  event.target.value = "";
+  return;
+ }
+
+ if(file.size > 2 * 1024 * 1024){
+  alert("Saiz gambar tidak boleh melebihi 2 MB.");
+  event.target.value = "";
+  return;
+ }
+
+ publicPhoto = file;
+
+ const preview = document.getElementById('publicPreview');
+ preview.src = URL.createObjectURL(file);
+ preview.classList.remove('hidden');
+}
+
 function stopPublicCamera(){
  if(publicCameraStream){
   publicCameraStream.getTracks().forEach(track=>track.stop());
@@ -314,14 +348,17 @@ async function submitPublicRegistration(){
 
  msg.textContent = "Sedang menghantar permohonan...";
 
- const path = crypto.randomUUID() + ".jpg";
 
- const {error:uploadError} = await db.storage
-  .from('prs-gambar')
-  .upload(path, publicPhoto, {
-   contentType:'image/jpeg',
-   upsert:false
-  });
+const extension = publicPhoto.type === "image/png" ? "png" : "jpg";
+const path = crypto.randomUUID() + "." + extension;
+
+const {error:uploadError} = await db.storage
+ .from('prs-gambar')
+ .upload(path, publicPhoto, {
+  contentType: publicPhoto.type,
+  upsert:false
+ });
+
 
  if(uploadError){
   msg.textContent = "Gagal memuat naik gambar: " + uploadError.message;
